@@ -319,6 +319,7 @@ exec 调用：在子进程中调用 execv() 函数执行 1-5-1。execv() 需要�
 代码
 
 ```c
+
 #include <stdio.h>
 #include <pthread.h>
 
@@ -359,7 +360,7 @@ int main() {
 
 运行结果
 
-![image-20231016191009814](C:\Users\nightgoodl\AppData\Roaming\Typora\typora-user-images\image-20231016191009814.png)
+![1-2-1](https://github.com/YJChina/os_lab1/blob/main/1-2-1.png)
 
 两个线程分别对shared_variable加 `NUM_OPERATIONS`次,
 
