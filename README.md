@@ -1,6 +1,6 @@
 # os_lab1
 
-## 步骤一
+## 步骤一 (直接测试)
 
 代码
 
@@ -37,13 +37,12 @@ return 0;
 运行结果
 
 ![1-1-1-1](https://github.com/YJChina/os_lab1/blob/main/1-1.png?raw=true)
-![1-1-1-2](https://github.com/YJChina/os_lab1/blob/main/1-1-1-2.png?raw=true)
-
-
 
 程序创建一个子进程，父进程和子进程分别输出pid和pid1，pid1为各自进程的PID,子进程的PID为fork()的返回值0,父进程的PID为子进程的PID,其中父进程的PID=2602,子进程的PID=2603；因此输出父进程的pid=2603,pid1=2602;子进程的pid=0,pid1=2603。
 
-## 步骤二
+![1-1-1-2](https://github.com/YJChina/os_lab1/blob/main/1-1-1-2.png?raw=true)
+
+## 步骤二 (去除wait)
 
 代码
 
@@ -85,7 +84,7 @@ wait()父进程等待子进程结束,避免他成为僵尸进程而占用系统�
 ![1-1-2-2](https://github.com/YJChina/os_lab1/blob/main/1-2-2.png?raw=true)
 输出顺序变得不可预测
 
-## 步骤三
+## 步骤三 (全局变量)
 
 运行结果
 
@@ -94,7 +93,7 @@ wait()父进程等待子进程结束,避免他成为僵尸进程而占用系统�
 
 子进程和父进程地址空间相同,子进程将value修改为1,地址空间和父进程相同
 
-## 步骤四
+## 步骤四 (调用函数)
 
 运行结果
 
