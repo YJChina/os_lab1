@@ -35,7 +35,9 @@ return 0;
 ```
 
 运行结果
-![1-1](https://github.com/YJChina/os_lab1/blob/main/1-1.png?raw=true)
+
+![1-1-1-1](https://github.com/YJChina/os_lab1/blob/main/1-1.png?raw=true)
+![1-1-1-2](
 
 
 
@@ -76,9 +78,9 @@ return 0;
 ```
 
 运行结果
-![1-2](https://github.com/YJChina/os_lab1/blob/main/1-2.png?raw=true)
+![1-1-2-1](https://github.com/YJChina/os_lab1/blob/main/1-2.png?raw=true)
 
 wait()父进程等待子进程结束,避免他成为僵尸进程而占用系统资源,父进程在没有调用wait()的情况下，会继续执行，可能会在子进程结束之前结束，会导致子进程变成孤儿进程。去掉wait,父进程将不会等待子进程结束，同时输出顺序可能会变得不可预测，导致不容易理解程序的执行流程。
 
-![1-2-2](https://github.com/YJChina/os_lab1/blob/main/1-2-2.png?raw=true)
+![1-1-2-2](https://github.com/YJChina/os_lab1/blob/main/1-2-2.png?raw=true)
 输出顺序变得不可预测
