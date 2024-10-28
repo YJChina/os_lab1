@@ -246,47 +246,61 @@ int main() {
 
 ![1-1-5-1](https://github.com/YJChina/os_lab1/blob/main/1-1-5-1.png)
 
+在子进程中，输出的父进程 PID 是主程序的 PID
+由于 1-5-1(system_call) 是由子进程调用的，因此它的父进程 PID 与子进程的 PID 相同。
 
 
 ### exec族函数
 
 代码
 
+主程序
+
 ```c
 #include <sys/types.h>
 #include <stdio.h>
-#include <unistd.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <sys/wait.h>
-int main()
-{
-pid_t pid, pid1;
-int value = 0;
-/* fork a child process */
-pid = fork();
-if (pid < 0) { /* error occurred */
-fprintf(stderr, "Fork Failed");
-return 1;
+
+int main() {
+    pid_t pid;
+
+    /* fork a child process */
+    pid = fork();
+    if (pid < 0) { /* error occurred */
+        fprintf(stderr, "Fork Failed\n");
+        return 1;
+    } 
+    else if (pid == 0) { /* child process */
+        printf("Child process PID: %d\n", getpid());
+        printf("Child process Parent PID: %d\n", getppid());
+
+        // 使用 exec 函数执行子程序
+        char *args[] = {"./1-5-1", NULL}; // 注意传入的参数
+        execv(args[0], args); // 使用 execv 执行子程序
+        perror("execv failed"); // execv 执行失败的处理
+        exit(1); // 如果 execv 失败，退出子进程
+    } 
+    else { /* parent process */
+        printf("Parent process PID: %d\n", getpid());
+        wait(NULL); // 等待子进程结束
+    }
+
+    return 0;
 }
-else if (pid == 0) { /* child process */
-pid1 = getpid();
-printf("child process1 PID: %d\n",pid1);
-execl("./system","system",NULL);
-printf("child process PID: %d\n",pid1);
-}
-else { /* parent process */
-pid1 = getpid();
-printf("parent process PID = %d\n",pid1);}
-wait(NULL);
-return 0;}
+
+
 ```
 
 运行结果
 
-![1-1-5-2]()
+![1-1-5-2](https://github.com/YJChina/os_lab1/blob/main/1-1-5-2.png)
 
 
+在主程序中，使用 fork() 创建子进程，输出子进程的 PID 和父进程的 PID。
 
-子进程调用 `execl()` 函数来执行 `system` ，该程序的路径是 `/system`。
+exec 调用：在子进程中调用 execv() 函数执行 1-5-1。execv() 需要传入一个参数数组，最后一个元素必须为 NULL。
 
-`execl()` 执行成功，子进程被 `/system` 替代，后续的代码不会被执行, 只会输出system程序的PID, 即子进程的PID
+当执行 1-5-1 后，1-5-1 的父进程 PID 仍然是主程序的 PID，因为 1-5-1 是由子进程创建的。
+
