@@ -321,50 +321,59 @@ exec 调用：在子进程中调用 execv() 函数执行 1-5-1。execv() 需要�
 ```c
 
 #include <stdio.h>
-#include <pthread.h>
+#include <pthread.h> // 引入 pthread 库以支持多线程
 
-#define NUM_THREADS 2
-#define NUM_OPERATIONS 1000000
+#define NUM_THREADS 2         // 定义线程数量为 2
+#define NUM_OPERATIONS 1000000 // 每个线程执行的操作次数
 
-int shared_variable = 0;
+int shared_variable = 0;      // 定义一个共享变量，初始值为 0
 
+// 线程函数，执行自增操作
 void* thread_function(void* thread_id) {
-    long tid = (long)thread_id;
+    long tid = (long)thread_id; // 将传入的线程 ID 转换为 long 类型
     for (int i = 0; i < NUM_OPERATIONS; i++) {
-        shared_variable++;
+        shared_variable++;       // 对共享变量进行自增操作
     }
+    // 打印线程创建成功的信息
     printf("thread%ld create success!\n", tid);
-    pthread_exit(NULL);
+    pthread_exit(NULL); // 退出线程
 }
 
 int main() {
-    pthread_t threads[NUM_THREADS];
+    pthread_t threads[NUM_THREADS]; // 定义线程数组以存储线程 ID
 
+    // 创建多个线程
     for (long i = 0; i < NUM_THREADS; i++) {
+        // 创建新线程，并指定线程函数和线程 ID
         int result = pthread_create(&threads[i], NULL, thread_function, (void*)i);
         if (result) {
+            // 如果线程创建失败，打印错误信息并退出
             printf("Error creating thread %ld. Return code: %d\n", i, result);
             return 1;
         }
     }
 
+    // 等待所有线程完成
     for (long i = 0; i < NUM_THREADS; i++) {
-        pthread_join(threads[i], NULL);
+        pthread_join(threads[i], NULL); // 阻塞主线程，直到指定线程结束
     }
 
+    // 输出最终的共享变量值
     printf("variable result: %d\n", shared_variable);
 
-    return 0;
+    return 0; // 正常结束程序
 }
+
+
 ```
 
 运行结果
 
 ![1-2-1](https://github.com/YJChina/os_lab1/blob/main/1-2-1.png)
 
-两个线程分别对shared_variable加 `NUM_OPERATIONS`次,
+两个线程分别对shared_variable加 `NUM_OPERATIONS`次
 
-但是因为缺少同步机制, 所以得到的`variable result`不确定
+程序的实现并没有对共享变量的访问进行同步，这导致数据竞争和不确定的结果,所以得到的`variable result`不确定
 
 ### 步骤二
 
@@ -373,51 +382,66 @@ int main() {
 #include <pthread.h>
 #include <semaphore.h>
 
-#define NUM_THREADS 2
-#define NUM_OPERATIONS 1000000
+#define NUM_THREADS 2         // 定义线程数量
+#define NUM_OPERATIONS 1000000 // 每个线程执行的操作次数
 
-int shared_variable = 0;
-sem_t semaphore;
+int shared_variable = 0;      // 共享变量
+sem_t semaphore;              // 定义信号量
 
+// 线程函数，执行自增操作
 void* thread_function(void* thread_id) {
-    long tid = (long)thread_id;
+    long tid = (long)thread_id; // 将线程 ID 转换为 long 类型
     for (int i = 0; i < NUM_OPERATIONS; i++) {
-        sem_wait(&semaphore); // 等待信号量
-        shared_variable++;
-        sem_post(&semaphore); // 发信号量
+        // P 操作：等待信号量，确保只有一个线程可以访问临界区
+        if (sem_wait(&semaphore) != 0) {
+            perror("sem_wait failed"); // 如果 sem_wait 失败，打印错误信息
+            pthread_exit(NULL);         // 退出线程
+        }
+        shared_variable++;              // 自增共享变量
+        // V 操作：释放信号量，允许其他线程访问
+        if (sem_post(&semaphore) != 0) {
+            perror("sem_post failed"); // 如果 sem_post 失败，打印错误信息
+            pthread_exit(NULL);         // 退出线程
+        }
     }
-    printf("thread%ld create success!\n", tid);
-    pthread_exit(NULL);
+    printf("thread%ld create success!\n", tid); // 打印线程创建成功的信息
+    pthread_exit(NULL); // 退出线程
 }
 
 int main() {
-    sem_init(&semaphore, 0, 1); // 初始化信号量，初值为1
+    sem_init(&semaphore, 0, 1); // 初始化信号量，初值为1，表示互斥访问
 
-    pthread_t threads[NUM_THREADS];
+    pthread_t threads[NUM_THREADS]; // 定义线程数组
 
+    // 创建多个线程
     for (long i = 0; i < NUM_THREADS; i++) {
         int result = pthread_create(&threads[i], NULL, thread_function, (void*)i);
         if (result) {
+            // 如果线程创建失败，打印错误信息并退出
             printf("Error creating thread %ld. Return code: %d\n", i, result);
             return 1;
         }
     }
 
+    // 等待所有线程完成
     for (long i = 0; i < NUM_THREADS; i++) {
-        pthread_join(threads[i], NULL);
+        pthread_join(threads[i], NULL); // 阻塞主线程，直到指定线程结束
     }
 
-    sem_destroy(&semaphore); // 销毁信号量
+    sem_destroy(&semaphore); // 销毁信号量，释放资源
 
+    // 输出最终的共享变量值
     printf("variable result: %d\n", shared_variable);
 
-    return 0;
+    return 0; // 正常结束程序
 }
+
+
 ```
 
 运行结果
 
-![image-20231016194232513](C:\Users\nightgoodl\AppData\Roaming\Typora\typora-user-images\image-20231016194232513.png)
+![1-2-2](https://github.com/YJChina/os_lab1/blob/main/1-2-2.png)
 
 使用信号量来保护共享变量, `sem_init()` 初始化一个二值信号量，初值为1，保证了只有一个线程可以访问共享变量。
 
@@ -430,55 +454,127 @@ int main() {
 代码
 
 ```c
+
 #include <stdio.h>
+#include <stdlib.h>
 #include <pthread.h>
 #include <semaphore.h>
 #include <unistd.h>
 #include <sys/syscall.h>
+
 #define NUM_THREADS 2
 
 sem_t semaphore;
 
+// 线程函数，执行子程序
 void* thread_function(void* thread_id) {
-    long tid = (long)thread_id;
-    //pthread_t ttid = pthread_self();
-    for (int i = 0; i < NUM_OPERATIONS; i++) {
-        sem_wait(&semaphore); // 等待信号量
-        shared_variable++;
-        sem_post(&semaphore); // 发信号量
-    }
-    printf("thread%ld create success!\n", tid);
-    printf("thread%ld tid = %ld,pid = %ld\n",tid,(long int)syscall(SYS_gettid),getpid());
-    system("./system");
-    printf("thread%ld systemcall return\n",tid);
-    pthread_exit(NULL);
+    long tid = (long)thread_id; // 将传入的线程 ID 转换为 long 类型
+
+    // 打印线程创建成功的信息以及线程和进程 ID
+    printf("Thread %ld create success!\n", tid);
+    printf("Thread %ld tid = %ld, pid = %d\n", tid, (long int)syscall(SYS_gettid), getpid());
+
+    // 调用系统命令
+    system("./1-5-1"); 
+    printf("Thread %ld system call return\n", tid); // 打印系统调用返回的信息
+    
+    pthread_exit(NULL); // 退出线程
 }
 
 int main() {
-    sem_init(&semaphore, 0, 1); // 初始化信号量，初值为1
+    sem_init(&semaphore, 0, 1); // 初始化信号量，初值为 1，表示互斥访问
 
-    pthread_t threads[NUM_THREADS];
+    pthread_t threads[NUM_THREADS]; // 定义线程数组以存储线程 ID
 
+    // 创建多个线程
     for (long i = 0; i < NUM_THREADS; i++) {
+        // 创建新线程，并指定线程函数和线程 ID
         int result = pthread_create(&threads[i], NULL, thread_function, (void*)i);
         if (result) {
+            // 如果线程创建失败，打印错误信息并退出
             printf("Error creating thread %ld. Return code: %d\n", i, result);
             return 1;
         }
     }
 
+    // 等待所有线程完成
     for (long i = 0; i < NUM_THREADS; i++) {
-        pthread_join(threads[i], NULL);
+        pthread_join(threads[i], NULL); // 阻塞主线程，直到指定线程结束
     }
 
-    sem_destroy(&semaphore); // 销毁信号量
-    return 0;
+    sem_destroy(&semaphore); // 销毁信号量，释放资源
+    return 0; // 正常结束程序
 }
+
+
+```
+
+
+
+#？
+
+```c
+#include <stdio.h>
+#include <pthread.h>        // 引入 pthread 库以支持多线程
+#include <semaphore.h>      // 引入信号量库
+#include <unistd.h>        // 引入用于 POSIX 操作系统 API
+#include <sys/syscall.h>   // 引入 syscall 函数以获取线程 ID
+
+#define NUM_THREADS 2      // 定义线程数量为 2
+
+sem_t semaphore;            // 定义信号量
+
+// 线程函数，执行自增操作并调用系统命令
+void* thread_function(void* thread_id) {
+    long tid = (long)thread_id; // 将传入的线程 ID 转换为 long 类型
+
+    for (int i = 0; i < NUM_OPERATIONS; i++) {
+        sem_wait(&semaphore);    // P 操作：等待信号量，确保只有一个线程可以访问临界区
+        shared_variable++;        // 自增共享变量
+        sem_post(&semaphore);     // V 操作：释放信号量，允许其他线程访问
+    }
+
+    // 打印线程创建成功的信息以及线程和进程 ID
+    printf("thread%ld create success!\n", tid);
+    printf("thread%ld tid = %ld, pid = %ld\n", tid, (long int)syscall(SYS_gettid), getpid());
+    
+    // 调用系统命令
+    system("./1-5-1"); 
+    printf("thread%ld systemcall return\n", tid); // 打印系统调用返回的信息
+    
+    pthread_exit(NULL); // 退出线程
+}
+
+int main() {
+    sem_init(&semaphore, 0, 1); // 初始化信号量，初值为 1，表示互斥访问
+
+    pthread_t threads[NUM_THREADS]; // 定义线程数组以存储线程 ID
+
+    // 创建多个线程
+    for (long i = 0; i < NUM_THREADS; i++) {
+        // 创建新线程，并指定线程函数和线程 ID
+        int result = pthread_create(&threads[i], NULL, thread_function, (void*)i);
+        if (result) {
+            // 如果线程创建失败，打印错误信息并退出
+            printf("Error creating thread %ld. Return code: %d\n", i, result);
+            return 1;
+        }
+    }
+
+    // 等待所有线程完成
+    for (long i = 0; i < NUM_THREADS; i++) {
+        pthread_join(threads[i], NULL); // 阻塞主线程，直到指定线程结束
+    }
+
+    sem_destroy(&semaphore); // 销毁信号量，释放资源
+    return 0; // 正常结束程序
+}
+
 ```
 
 运行结果
 
-![image-20231016211946209](C:\Users\nightgoodl\AppData\Roaming\Typora\typora-user-images\image-20231016211946209.png)
+![1-2-3](https://github.com/YJChina/os_lab1/blob/main/1-2-3.png）
 
 
 
