@@ -183,6 +183,7 @@ int main() {
 
 在子进程中，counter 的初始值 0 增加到 1，然后又增加到 3。这些修改仅存在于子进程中。
 父进程对 counter 的操作则是从初始值 0 先减少到 -1，然后再减少到 -3。同样，这些修改仅存在于父进程中。
+无论在父进程还是子进程中，counter 的地址是相同的。这是因为 fork() 创建了父进程的副本，子进程获得了父进程的整个地址空间的一个拷贝，包括所有全局变量的地址。
 
 ## 步骤五(调用函数)
 
@@ -190,52 +191,62 @@ int main() {
 
 代码
 
+主程序
+
 ```c
+
 #include <sys/types.h>
 #include <stdio.h>
-#include <unistd.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <sys/wait.h>
-int main()
-{
-pid_t pid, pid1;
-int value = 0;
-/* fork a child process */
-pid = fork();
-if (pid < 0) { /* error occurred */
-fprintf(stderr, "Fork Failed");
-return 1;
+
+int main() {
+    pid_t pid;
+
+    /* fork a child process */
+    pid = fork();
+    if (pid < 0) { /* error occurred */
+        fprintf(stderr, "Fork Failed\n");
+        return 1;
+    } 
+    else if (pid == 0) { /* child process */
+        printf("Child process PID: %d\n", getpid());
+        printf("Child process Parent PID: %d\n", getppid());
+        system("./1-5-1"); // 调用子程序
+    } 
+    else { /* parent process */
+        printf("Parent process PID: %d\n", getpid());
+        wait(NULL); // 等待子进程结束
+    }
+
+    return 0;
 }
-else if (pid == 0) { /* child process */
-pid1 = getpid();
-printf("child process1 PID: %d\n",pid1);
-system("./system");
-printf("child process PID: %d\n",pid1);
-}
-else { /* parent process */
-pid1 = getpid();
-printf("parent process PID = %d\n",pid1);}
-wait(NULL);return 0;}
+
+
 ```
 
-system_call代码
+子程序
 
 ```c
+
 #include <stdio.h>
 #include <unistd.h>
 
 int main() {
-    pid_t pid = getpid();
-    printf("system_call PID：%d\n", pid);
+    printf("Executing child_program...\n");
+    printf("Process PID: %d\n", getpid());
+    printf("Parent process PID: %d\n", getppid());
     return 0;
 }
+
 ```
 
 运行结果
 
-![1-1-5-1]()
+![1-1-5-1](https://github.com/YJChina/os_lab1/blob/main/1-1-5-1.png)
 
-父子进程各自输出自己的PID,子进程调用system系统调用,输出当前(system)进程的PID,system调用完成,子进程继续执行,输出子进程的PID(再次)
+
 
 ### exec族函数
 
