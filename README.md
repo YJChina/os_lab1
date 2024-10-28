@@ -28,10 +28,11 @@ int main()
     printf("parent: pid = %d",pid); /* C */
     printf("parent: pid1 = %d",pid1); /* D */
     wait(NULL);
-}
+  }
+
 return 0;
 }
 ```
 
 运行结果
-
+[1-1]("C:\Users\闫铭博\Pictures\Screenshots\屏幕截图 2024-10-28 164118.png")
