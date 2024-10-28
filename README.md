@@ -35,4 +35,4 @@ return 0;
 ```
 
 运行结果
-![1-1]()
+![1-1](https://github.com/YJChina/os_lab1/blob/main/1-1.png?raw=true)
