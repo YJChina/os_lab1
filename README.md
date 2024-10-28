@@ -511,7 +511,7 @@ int main() {
 
 
 
-#？
+# ？
 
 ```c
 #include <stdio.h>
@@ -574,7 +574,7 @@ int main() {
 
 运行结果
 
-![1-2-3](https://github.com/YJChina/os_lab1/blob/main/1-2-3.png）
+![1-2-3](https://github.com/YJChina/os_lab1/blob/main/1-2-3.png)
 
 
 
