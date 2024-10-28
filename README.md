@@ -35,4 +35,4 @@ return 0;
 ```
 
 运行结果
-[1-1]("C:\Users\闫铭博\Pictures\Screenshots\屏幕截图 2024-10-28 164118.png")
+！[1-1]("C:\Users\闫铭博\Pictures\Screenshots\屏幕截图 2024-10-28 164118.png")
