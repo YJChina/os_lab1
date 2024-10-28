@@ -125,21 +125,66 @@ int main() {
 ```
 运行结果
 
-![1-1-3-1]()
-![1-1-3-2]()
+![1-1-3-1](https://github.com/YJChina/os_lab1/blob/main/1-1-3-1.png)
 
-子进程和父进程地址空间相同,子进程将value修改为1,地址空间和父进程相同
+全局变量的地址：在父进程和子进程中，全局变量counter的地址是相同的。虽然fork()创建了父进程的副本，但由于每个进程的内存空间是独立的，因此它们各自持有counter的独立副本，访问相同的内存地址。
 
-## 步骤四 (调用函数)
+独立性：父进程和子进程对counter的操作是独立的。在子进程中，counter的值被增加到1，而在父进程中，counter的值被减少到-1。这表明，尽管它们访问的是同一地址，但在fork()后，父子进程各自的counter值是独立的。
+
+输出顺序：由于父进程使用wait()函数等待子进程结束，因此子进程的输出会在父进程的输出之前。
+
+## 步骤四 
+
+代码
+
+```c
+
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <stdio.h>
+#include <unistd.h>
+
+int counter = 0; // 全局变量
+
+int main() {
+    pid_t pid;
+
+    /* fork a child process */
+    pid = fork();  
+    if (pid < 0) { /* error occurred */
+        fprintf(stderr, "Fork Failed\n");
+        return 1;
+    } 
+    else if (pid == 0) { /* child process */
+        counter += 1; // 子进程对全局变量进行操作
+        printf("child: counter after increment = %d\n", counter); // 输出子进程的counter值
+        printf("child: counter address = %p\n", (void*)&counter); // 输出子进程中counter的地址
+        counter += 2; // 再次修改子进程的counter值
+        printf("child: counter after second increment = %d\n", counter); // 输出修改后的counter值
+    } 
+    else { /* parent process */
+        counter += -1; // 父进程对全局变量进行操作
+        wait(NULL); // 等待子进程结束
+        printf("parent: counter after increment = %d\n", counter); // 输出父进程的counter值
+        printf("parent: counter address = %p\n", (void*)&counter); // 输出父进程中counter的地址
+        counter += -2; // 修改父进程的counter值
+        printf("parent: counter after second increment = %d\n", counter); // 输出修改后的counter值
+    }
+
+    return 0;
+}
+
+
+```
 
 运行结果
 
-![1-1-4-1]()
-![1-1-4-2]()
+![1-1-4-1](https://github.com/YJChina/os_lab1/blob/main/1-1-4-1.png)
 
-运行结果与步骤三相同最后在return前给value值加5父进程和子进程分别返回4和6, 地址空间都保持不变
+在子进程中，counter 的初始值 0 增加到 1，然后又增加到 3。这些修改仅存在于子进程中。
+父进程对 counter 的操作则是从初始值 0 先减少到 -1，然后再减少到 -3。同样，这些修改仅存在于父进程中。
 
-## 步骤五
+## 步骤五(调用函数)
 
 ### system()
 
