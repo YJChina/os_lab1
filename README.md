@@ -668,12 +668,10 @@ int main() {
 }
 ```
 
-
-
 ### 步骤二
 
 运行结果
 
-![1-3-1]()
+![1-3-1](https://github.com/YJChina/os_lab1/blob/main/1-3-1.png)
 
 程序创建两个线程每个线程都会执行 `thread_function` 函数, 在 `thread_function` 中, 使用自旋锁确保了对共享变量的安全访问。每个线程会进行5000次的累加操作。最终得到共享变量的值为10000
