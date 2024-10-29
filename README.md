@@ -587,8 +587,93 @@ int main() {
 
 ![1-2-4](https://github.com/YJChina/os_lab1/blob/main/1-2-4.png)
 
-在同一进程中, 不同线程的`tid`不同,但`pid`相同,调用`execl()`程序,  来执行 `system` ，该程序的路径是 `/1-5-1`。
+在同一进程中, 不同线程的`tid`不同,但`pid`相同,调用`execl()`程序,  来执行 `子程序` ，该程序的路径是 `/1-5-1`。
 
-`execl()` 执行成功，子进程被 `/system` 替代，后续的代码不会被执行, 只会输出system程序的PID, 即子进程的PID。
+每个线程在创建时都会打印它的线程 ID (TID) 和当前进程的 PID。这些信息显示线程在相同的父进程 (PID = 2649) 中运行。
 
-因此子进程未执行的另一个线程也不会执行而是直接被`system`程序替代,  故只会输出一个线程`tid`和`pid`,另一个线程将不会被创建
+子程序打印了它的进程 PID 和父进程 PID。这里，子程序的进程 PID 是子进程的 PID，而父进程 PID 保持不变，显示为 2649。
+
+
+
+
+## 实验1-3
+
+### 步骤一
+
+补全代码
+
+```c
+#include <stdio.h>
+#include <pthread.h>
+
+// 定义自旋锁结构体
+typedef struct {
+    int flag;
+} spinlock_t;
+
+// 初始化自旋锁
+void spinlock_init(spinlock_t *lock) {
+    lock->flag = 0;
+}
+
+// 获取自旋锁
+void spinlock_lock(spinlock_t *lock) {
+    while (__sync_lock_test_and_set(&lock->flag, 1)) {
+        // 自旋等待
+    }
+}
+
+// 释放自旋锁
+void spinlock_unlock(spinlock_t *lock) {
+    __sync_lock_release(&lock->flag);
+}
+
+// 共享变量
+int shared_value = 0;
+
+// 线程函数
+void *thread_function(void *arg) {
+    spinlock_t *lock = (spinlock_t *)arg;
+    for (int i = 0; i < 5000; ++i) {
+        spinlock_lock(lock);
+        shared_value++;
+        spinlock_unlock(lock);
+    } return NULL;
+}
+
+int main() {
+    pthread_t thread1, thread2;
+    spinlock_t lock;
+
+    // 输出共享变量的值
+    printf("Shared value：%d\n", shared_value);
+
+    // 初始化自旋锁
+    spinlock_init(&lock);
+
+    // 创建两个线程
+    pthread_create(&thread1, NULL, thread_function, &lock);
+    pthread_create(&thread2, NULL, thread_function, &lock);
+
+    // 等待线程结束
+    pthread_join(thread1, NULL);
+    printf("tread1 create success!\n");
+    pthread_join(thread2, NULL);
+    printf("tread2 create success!\n");
+
+    // 输出共享变量的值
+    printf("Shared value：%d\n", shared_value);
+
+    return 0;
+}
+```
+
+
+
+### 步骤二
+
+运行结果
+
+![1-3-1]()
+
+程序创建两个线程每个线程都会执行 `thread_function` 函数, 在 `thread_function` 中, 使用自旋锁确保了对共享变量的安全访问。每个线程会进行5000次的累加操作。最终得到共享变量的值为10000
