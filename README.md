@@ -234,7 +234,7 @@ int main() {
 
 ```
 
-子程序
+子程序 '1-5-1'
 
 ```c
 
@@ -371,9 +371,9 @@ int main() {
 
 ![1-2-1](https://github.com/YJChina/os_lab1/blob/main/1-2-1.png)
 
-两个线程分别对shared_variable加 `NUM_OPERATIONS`次
+目标是两个线程分别对shared_variable加 `NUM_OPERATIONS`次
 
-程序的实现并没有对共享变量的访问进行同步，这导致数据竞争和不确定的结果,所以得到的`variable result`不确定
+然而程序的实现并没有对共享变量的访问进行同步，这导致数据竞争和不确定的结果,所以得到的`variable result`不确定
 
 ### 步骤二
 
@@ -506,25 +506,32 @@ int main() {
     return 0; // 正常结束程序
 }
 
-
 ```
 
+运行结果
+
+![1-2-3](https://github.com/YJChina/os_lab1/blob/main/1-2-3.png)
 
 
-# ？
+
+代码
 
 ```c
+
 #include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 #include <pthread.h>        // 引入 pthread 库以支持多线程
 #include <semaphore.h>      // 引入信号量库
-#include <unistd.h>        // 引入用于 POSIX 操作系统 API
 #include <sys/syscall.h>   // 引入 syscall 函数以获取线程 ID
 
 #define NUM_THREADS 2      // 定义线程数量为 2
+#define NUM_OPERATIONS 1000000 // 定义每个线程执行的自增次数
 
 sem_t semaphore;            // 定义信号量
+int shared_variable = 0;    // 定义共享变量
 
-// 线程函数，执行自增操作并调用系统命令
+// 线程函数，执行自增操作并模拟子程序功能
 void* thread_function(void* thread_id) {
     long tid = (long)thread_id; // 将传入的线程 ID 转换为 long 类型
 
@@ -535,13 +542,16 @@ void* thread_function(void* thread_id) {
     }
 
     // 打印线程创建成功的信息以及线程和进程 ID
-    printf("thread%ld create success!\n", tid);
-    printf("thread%ld tid = %ld, pid = %ld\n", tid, (long int)syscall(SYS_gettid), getpid());
+    printf("Thread %ld create success!\n", tid);
+    printf("Thread %ld TID = %ld, PID = %ld\n", tid, (long int)syscall(SYS_gettid), getpid());
     
-    // 调用系统命令
-    system("./1-5-1"); 
-    printf("thread%ld systemcall return\n", tid); // 打印系统调用返回的信息
+    // 模拟 exec 函数的调用
+    char *args[] = {"./1-5-1", NULL}; // 子程序的参数
+    printf("Thread %ld executing child_program...\n", tid);
     
+    // 使用 execv 执行子程序
+    execv(args[0], args); // 使用 execv 执行子程序
+    perror("execv failed"); // execv 执行失败的处理
     pthread_exit(NULL); // 退出线程
 }
 
@@ -570,70 +580,14 @@ int main() {
     return 0; // 正常结束程序
 }
 
+
 ```
 
 运行结果
 
-![1-2-3](https://github.com/YJChina/os_lab1/blob/main/1-2-3.png)
+![1-2-4](https://github.com/YJChina/os_lab1/blob/main/1-2-4.png)
 
-
-
-代码
-
-```c
-#include <stdio.h>
-#include <pthread.h>
-#include <semaphore.h>
-#include <unistd.h>
-#include <sys/syscall.h>
-#define NUM_THREADS 2
-#define NUM_OPERATIONS 1000000
-
-int shared_variable = 0;
-sem_t semaphore;
-
-void* thread_function(void* thread_id) {
-    long tid = (long)thread_id;
-    //pthread_t ttid = pthread_self();
-    for (int i = 0; i < NUM_OPERATIONS; i++) {
-        sem_wait(&semaphore); // 等待信号量
-        shared_variable++;
-        sem_post(&semaphore); // 发信号量
-    }
-    printf("thread%ld create success!\n", tid);
-    printf("thread%ld tid = %ld,pid = %ld\n",tid,(long int)syscall(SYS_gettid),getpid());
-    execl("./system","system",NULL);
-    printf("thread%ld systemcall return\n",tid);
-    pthread_exit(NULL);
-}
-
-int main() {
-    sem_init(&semaphore, 0, 1); // 初始化信号量，初值为1
-
-    pthread_t threads[NUM_THREADS];
-
-    for (long i = 0; i < NUM_THREADS; i++) {
-        int result = pthread_create(&threads[i], NULL, thread_function, (void*)i);
-        if (result) {
-            printf("Error creating thread %ld. Return code: %d\n", i, result);
-            return 1;
-        }
-    }
-
-    for (long i = 0; i < NUM_THREADS; i++) {
-        pthread_join(threads[i], NULL);
-    }
-
-    sem_destroy(&semaphore); // 销毁信号量
-    return 0;
-}
-```
-
-运行结果
-
-![image-20231016212741617](C:\Users\nightgoodl\AppData\Roaming\Typora\typora-user-images\image-20231016212741617.png)
-
-在同一进程中, 不同线程的`tid`不同,但`pid`相同,调用`execl()`程序,  来执行 `system` ，该程序的路径是 `/system`。
+在同一进程中, 不同线程的`tid`不同,但`pid`相同,调用`execl()`程序,  来执行 `system` ，该程序的路径是 `/1-5-1`。
 
 `execl()` 执行成功，子进程被 `/system` 替代，后续的代码不会被执行, 只会输出system程序的PID, 即子进程的PID。
 
